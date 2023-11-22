@@ -17,14 +17,24 @@ const registre = async (req, res) => {
         email,
         password: poswordcry,
       });
+      
       console.log("User registered:", usercreate);
+      
       const token = await JTW.sign(
         { id: usercreate._id },
         process.env.JWT,
-        // secretKey, // Use the secret key you generated
         { expiresIn: "7D" }
       );
-      res.status(200).json({ msg: usercreate, token: token });
+      
+      res.status(200).json({
+        msg: usercreate,
+        token: token,
+        user: {
+          name: usercreate.name, // Fix here, use usercreate instead of existUser
+          email: usercreate.email, // Fix here, use usercreate instead of existUser
+        },
+      });
+      
     }
   } catch (error) {
     console.error("Error during registration:", error);
@@ -33,41 +43,41 @@ const registre = async (req, res) => {
 };
 
 const login = async (req, res) => {
-
   try {
     const { email, password } = req.body;
     const existUser = await User.findOne({ email });
-    if (!existUser) {
-      res.status(400).json({ msg: "This email does not exist" });
-    } else {
-      const isPasswordValid = await bcrypt.compare(
-        password,
-        existUser.password
-      );
-      if (isPasswordValid) {
-        const token = await JTW.sign(
-          { id: existUser._id },
-          process.env.JWT,
-          // secretKey, // Use the secret key you generated
-          { expiresIn: "7D" }
-        );
-        res.status(200).json({
-          msg: "Account login successful",
-          user: {
-            name: existUser.name,
-            email: existUser.email,
-          },
-          token:token
-        });
-      } else {
-        res.status(500).json({ msg: "Invalid password" });
-      }
 
+    if (!existUser) {
+      return res.status(400).json({ msg: "This email does not exist" });
     }
+
+    const isPasswordValid = await bcrypt.compare(password, existUser.password);
+
+    if (!isPasswordValid) {
+      return res.status(400).json({ msg: "Invalid password" });
+    }
+
+    const token = await JTW.sign(
+      { id: existUser._id },
+      process.env.JWT,
+      { expiresIn: "7D" }
+    );
+
+    res.status(200).json({
+      msg: "Account login successful",
+      user: {
+        name: existUser.name,
+        email: existUser.email,
+      },
+      token: token,
+    });
   } catch (error) {
-    res.status(500).json({msg:"Something went wrong"})
+    console.error("Error during login:", error);
+    res.status(500).json({ msg: "Internal Server Error" });
   }
 };
+
+
 const getuserdata = async (req, res) => {
   try {
     const { userid } = req.body;
@@ -86,14 +96,20 @@ const updateUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
     const token = req.header('Authorization');
-
+    console.log(req.headers);
     if (!token) {
+      console.log(req.headers);
+
       return res.status(401).json({ msg: "Authorization token is required" });
     }
+    console.log("Token received in updateUser:", token);
 
-    jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
+    JTW.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
+      console.log('Decoded:', decoded);
+
       if (err) {
-        return res.status(401).json({ msg: "Invalid token" });
+        console.log('Invalid token:', err);
+        return res.status(401).json({ msg: 'Invalid token' });
       }
 
       const userId = decoded.id;
@@ -124,7 +140,7 @@ const updateUser = async (req, res) => {
       res.status(200).json({ msg: "User updated successfully", user: updatedUser });
     });
   } catch (error) {
-    console.error("Error during user update:", error);
+    console.error('Error during user update:', error);
     res.status(500).json({ msg: "Internal Server Error" });
   }
 };

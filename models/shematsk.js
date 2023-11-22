@@ -1,14 +1,27 @@
 const mongoose = require('mongoose');
 
-
 const taskSchema = new mongoose.Schema({
     title: {
-        type: String, // Correct "string" to "String"
+        type: String,
         required: true
     },
     description: {
-        type: String, // Correct "string" to "String"
+        type: String,
         required: true
+    },
+    status: {
+        type: String,
+        default: 'Pending',
+        enum: ["Pending", "Done"],
+    },
+    deadline: {
+        type: Date,
+        required: false
+    },
+    priority: {
+        type: String,
+        enum: ["High", "Medium", "Low","All"],
+        default: "Medium"
     },
     createdAt: {
         type: Date,
@@ -20,6 +33,5 @@ const taskSchema = new mongoose.Schema({
     }
 });
 
-
-const TASK = mongoose.model('Task', taskSchema);
-module.exports = TASK; 
+const Task = mongoose.model('Task', taskSchema);
+module.exports = Task;

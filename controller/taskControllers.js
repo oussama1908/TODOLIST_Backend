@@ -2,14 +2,16 @@ const TASK = require("../models/shematsk");
 
 const addTask = async (req, res) => {
     try {
-        const { title, description } = req.body;
+        const { title, description, deadline, status } = req.body;
         const userId = req.body.userId;
-        const newtask = await TASK.create({ title, description, owner: userId });
+        const newtask = await TASK.create({ title, description, deadline, status, owner: userId });
+        console.log(status);
         res.status(201).json({ msg: "task added successfully", task: newtask });
     } catch (error) {
         res.status(500).json({ msg: "something went wrong", error: error });
     }
 }
+
 
 const getTask=async (req,res)=>{
 
